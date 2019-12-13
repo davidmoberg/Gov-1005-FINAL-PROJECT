@@ -85,14 +85,11 @@ real_data <- real_data %>% mutate(technology = replace(technology, technology ==
 
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Conventional Steam Coal", "Coal"))
 
-
-
 real_data<-real_data %>%filter(technology!="All Other")
 real_data<- real_data%>%filter(technology %in% c("Wind", "Solar", "Oil", "Nuclear", "Natural Gas", "Hydroelectric", "Geothermal", "Coal", "Biomass"))
 ```
 
 ```{r}
-
 group_data<-real_data%>%
   na.omit()%>%
   group_by(technology)%>%
@@ -106,6 +103,8 @@ group_data<- group_data%>%arrange(desc(repProp))
 ```{r}
 ggplot(group_data, aes(x=reorder(technology, -repProp), y=repProp))+geom_col()+labs(x = "Generation Method", y= "Proportion of Republican Counties")
 ```
+
+
 
 
 http://rpubs.com/davidmoberg/finalgraph1
