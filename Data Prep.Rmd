@@ -92,6 +92,7 @@ real_data<- real_data%>%filter(technology %in% c("Wind", "Solar", "Oil", "Nuclea
 ```
 
 ```{r}
+
 group_data<-real_data%>%
   na.omit()%>%
   group_by(technology)%>%
@@ -99,9 +100,12 @@ group_data<-real_data%>%
 
 group_data<-group_data%>%mutate(demProp = demCount/totalPlants)%>%mutate(repProp = repCount/totalPlants)
 
-gt(group_data)
+group_data<- group_data%>%arrange(desc(repProp))
+```
+
+```{r}
+ggplot(group_data, aes(x=reorder(technology, -repProp), y=repProp))+geom_col()+labs(x = "Generation Method", y= "Proportion of Republican Counties")
 ```
 
 
-
-
+http://rpubs.com/davidmoberg/finalgraph1
