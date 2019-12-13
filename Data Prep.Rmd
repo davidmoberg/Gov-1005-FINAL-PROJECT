@@ -1,0 +1,107 @@
+---
+title: "Data Prep"
+author: "David Moberg"
+date: "11/29/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(readxl)
+library(janitor)
+library(rstanarm)
+library(infer)
+library(moderndive)
+library(knitr)
+library(reprex)
+library(sf)
+library(raster)
+library(bootstrap)
+library(gt)
+library(coefplot)
+library(skimr)
+library(tidyverse)
+```
+
+```{r read in power plant data}
+plantData <- read_xlsx("eia8602016/3_1_Generator_Y2016.xlsx", sheet = "Operable", skip = 1, n_max = 20724)
+plantData<-plantData%>%select("Plant Name", "State", "County", "Technology", "Operating Year")%>%clean_names()
+```
+
+```{r read in presidential election data}
+presData <- read_csv("raw-data/countypres_2000-2016.csv")%>%clean_names()
+presData<- presData%>%
+  filter(year == 2016)%>%
+  group_by(state_po)%>%
+  group_by(county)%>%
+  arrange(desc(candidatevotes))%>%
+  slice(1)%>%
+  ungroup()%>%
+  ungroup()%>%
+  select(state_po, county, party, candidate)
+
+
+presData<-presData%>%
+  mutate(state = state_po)%>%select(state, county, party, candidate)
+```
+
+```{r, join datasets, clean for needed results}
+real_data<- full_join(plantData, presData, by = "county")
+real_data<- real_data%>%distinct(plant_name, .keep_all = TRUE)
+```
+
+```{r, streamline technology classifications}
+#Solar
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Solar Thermal without Energy Storage", "Solar"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Solar Photovoltaic", "Solar"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Solar Thermal with Energy Storage", "Solar"))
+
+#Biomass
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Wood/Wood Waste Biomass", "Biomass"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Other Waste Biomass", "Biomass"))
+
+#Oil/Petroleum
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Petroleum Coke", "Oil"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Petroleum Liquids", "Oil"))
+
+#Wind
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Onshore Wind Turbine", "Wind"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Offshore Wind Turbine", "Wind"))
+
+#Natural Gas
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Other Natural Gas", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Other Gases", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas with Compressed Air Storage", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Steam Turbine", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Internal Combustion Engine", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Fired Combustion Turbine", "Natural Gas"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Fired Combined Cycle", "Oil"))
+
+
+#Hydroelectric
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Conventional Hydroelectric", "Hydroelectric"))
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Hydroelectric Pumped Storage", "Hydroelectric"))
+
+real_data <- real_data %>% mutate(technology = replace(technology, technology == "Conventional Steam Coal", "Coal"))
+
+
+
+real_data<-real_data %>%filter(technology!="All Other")
+real_data<- real_data%>%filter(technology %in% c("Wind", "Solar", "Oil", "Nuclear", "Natural Gas", "Hydroelectric", "Geothermal", "Coal", "Biomass"))
+```
+
+```{r}
+group_data<-real_data%>%
+  na.omit()%>%
+  group_by(technology)%>%
+  summarise(repCount = sum(party == "republican"), demCount = sum(party == "democrat"), totalPlants = n())
+
+group_data<-group_data%>%mutate(demProp = demCount/totalPlants)%>%mutate(repProp = repCount/totalPlants)
+
+gt(group_data)
+```
+
+
+
+
