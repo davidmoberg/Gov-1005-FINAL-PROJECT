@@ -12,7 +12,7 @@ library(shiny)
 
 ui <- navbarPage("Power Plants and Political Outcomes in the US",
                  tabPanel("Background"),
-                 tabPanel("Data and Graphs"),
+                 tabPanel("Data"),
                  tabPanel("Conclusions"))
 
 

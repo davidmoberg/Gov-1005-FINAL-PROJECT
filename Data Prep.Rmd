@@ -29,7 +29,10 @@ plantData<-plantData%>%select("Plant Name", "State", "County", "Technology", "Op
 ```
 
 ```{r read in presidential election data}
+#read in data
 presData <- read_csv("raw-data/countypres_2000-2016.csv")%>%clean_names()
+
+#read in 
 presData<- presData%>%
   filter(year == 2016)%>%
   group_by(state_po)%>%
@@ -39,7 +42,6 @@ presData<- presData%>%
   ungroup()%>%
   ungroup()%>%
   select(state_po, county, party, candidate)
-
 
 presData<-presData%>%
   mutate(state = state_po)%>%select(state, county, party, candidate)
@@ -51,6 +53,8 @@ real_data<- real_data%>%distinct(plant_name, .keep_all = TRUE)
 ```
 
 ```{r, streamline technology classifications}
+#Compact types of technology for display/regression purposes
+
 #Solar
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Solar Thermal without Energy Storage", "Solar"))
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Solar Photovoltaic", "Solar"))
@@ -78,13 +82,14 @@ real_data <- real_data %>% mutate(technology = replace(technology, technology ==
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Fired Combustion Turbine", "Natural Gas"))
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Natural Gas Fired Combined Cycle", "Oil"))
 
-
 #Hydroelectric
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Conventional Hydroelectric", "Hydroelectric"))
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Hydroelectric Pumped Storage", "Hydroelectric"))
 
+#Coal
 real_data <- real_data %>% mutate(technology = replace(technology, technology == "Conventional Steam Coal", "Coal"))
 
+#Data to be removed
 real_data<-real_data %>%filter(technology!="All Other")
 real_data<- real_data%>%filter(technology %in% c("Wind", "Solar", "Oil", "Nuclear", "Natural Gas", "Hydroelectric", "Geothermal", "Coal", "Biomass"))
 ```
@@ -95,12 +100,13 @@ group_data<-real_data%>%
   group_by(technology)%>%
   summarise(repCount = sum(party == "republican"), demCount = sum(party == "democrat"), totalPlants = n())
 
-group_data<-group_data%>%mutate(demProp = demCount/totalPlants)%>%mutate(repProp = repCount/totalPlants)
 
-group_data<- group_data%>%arrange(desc(repProp))
+group_data<-group_data%>%mutate(demProp = demCount/totalPlants)%>%mutate(repProp = repCount/totalPlants)
 ```
 
 ```{r}
+#preliminary bar plot of republican concentrations
+
 ggplot(group_data, aes(x=reorder(technology, -repProp), y=repProp))+geom_col()+labs(x = "Generation Method", y= "Proportion of Republican Counties")
 ```
 
